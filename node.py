@@ -5,14 +5,24 @@ from copy import deepcopy
 class Node():
     DEFAULT_DEPTH = 4
 
-    def __init__(self, values=None, is_internal=False, depth=DEFAULT_DEPTH):
+    def __init__(self, values=None, is_internal=False, parent=None, depth=DEFAULT_DEPTH):
         self._values = []
         self._children = [None]*(depth+1)
         self.depth = depth
+        self.parent = parent
         self._is_internal = is_internal
+        self._num_children = 0
 
         if values is not None:
             self.values = values
+
+    @property
+    def parent(self):
+        return self._parent
+    
+    @parent.setter
+    def parent(self, value):
+        self._parent = value
     
     @property
     def is_internal(self):
@@ -46,12 +56,29 @@ class Node():
     def values(self):
         return self._values
     
+    @property
+    def num_children(self):
+        return self._num_children
+
+    @property
+    def has_children(self):
+        return self._num_children > 0
+
+    @property
+    def is_leaf_node(self):
+        return not self.has_children
+    
     @values.setter
     def values(self, value):
         if len(value) <= self.depth:
             self._values = deepcopy(value)
         else:
             raise Exception('The number of values passed in should not exceed the depth.')
+
+    @property
+    def is_split_imminent(self):
+        return (len(self._values) + 1) > self.depth 
+
 
     def _find_insert_pos(self, value):
         idx = 0
@@ -60,9 +87,13 @@ class Node():
             for i, v in enumerate(self._values):
                 lower_bound = -math.inf if not i else self._values[i-1]
                 upper_bound = math.inf if i == len(self._values) else self._values[i]
+                
                 if lower_bound <= value <= upper_bound:
                     idx = i
                     break
+            else:
+                if value > self.max:
+                    idx = len(self._values)
         
         return idx
     
@@ -74,21 +105,44 @@ class Node():
         keep_up_to = (math.floor if self.is_internal else math.ceil)((self.depth+1)/2) 
 
     
-        node = Node(all_values[keep_up_to+(1 if self.is_internal else 0):], self.is_internal, self.depth)
+        node = Node(values=all_values[keep_up_to+(1 if self.is_internal else 0):], is_internal=self.is_internal, depth=self.depth)
         self.values = all_values[:keep_up_to]
-        return node
+        return node, all_values[keep_up_to-1]
 
     def insert(self, value):
-        split_node = None
+        split = None
         
         assert len(self._values) <= self.depth, 'Node has more than the alloted number of values.'
 
         if len(self._values) < self.depth:
             self._values.insert(self._find_insert_pos(value), value)
         else:
-            split_node = self._split(value)
+            split = self._split(value)
         
-        return split_node
+        return split
+
+    def add_child(self, node):
+        idx = self._find_insert_pos(node.max)
+        assert self.children[idx] is None, 'Cannot overwrite child node.'
+        self._children[idx] = node
+        self.is_internal = True
+        self._num_children += 1
+        node.parent = self
+
+    def remove_child(self, node):
+        for i, child in enumerate(self._children):
+            if child == node:
+                self._children[i] = None
+                self._num_children -= 1 
+                break
+        
+        if not self._num_children:
+            self.is_internal = False
+
+        node.parent = None
+
+    def find_child(self, value):
+        return self._children[self._find_insert_pos(value)]
 
     def remove(self, value):
         success = False
