@@ -56,20 +56,28 @@ class BPlusTree():
         root = self.root if root is None else root
 
         if not root.is_leaf_node:
-            split_value = self.insert(value, root.find_child(value))
-            if split_value is not None:
+            split = self.insert(value, root.find_child(value))
+            if split is not None:
+                new_node, split_value = split
                 if not root.is_split_imminent:
                     root.insert(split_value)
+                    root.add_child(new_node)
                 else:
-                    new_node, split_value = root.insert(split_value)
+                    second_new_node, second_split_value = root.insert(split_value)
+                    try:
+                        root.add_child(new_node)
+                    except:
+                        second_new_node.add_child(new_node)
+                    
                     parent_node = root.parent
                     
                     if parent_node is None:
-                        parent_node = Node(values=[split_value], depth=self.depth, is_internal=True)
+                        parent_node = Node(values=[second_split_value], depth=self.depth, is_internal=True)
                         parent_node.add_child(root)
-                        parent_node.add_child(new_node)
+                        parent_node.add_child(second_new_node)
+                        self.root = parent_node
                     else:
-                        return split_value
+                        return second_new_node, second_split_value
                 
         else:
             if not root.is_split_imminent:
@@ -82,12 +90,13 @@ class BPlusTree():
                     parent_node = Node(values=[split_value], depth=self.depth, is_internal=True)
                     parent_node.add_child(root)
                     parent_node.add_child(new_node)
+                    self.root = parent_node
                 else:
-                    return split_value
+                    return new_node, split_value
 
 
     def _render_node_str(self, node):
-        values = ['']*self.depth
+        values = [' ']*self.depth
         f_idx = 0
         buffer = []
 
@@ -101,10 +110,23 @@ class BPlusTree():
         buffer.append('<f%d>' % (f_idx,))
         return ''.join(buffer)
 
+    def _render_graph(self, g):
+        queue = [self.root]
 
+        while queue:
+            root = queue.pop(0)
+            g.node('%s' % (id(root),), nohtml(self._render_node_str(root)))
+
+            for i, child in enumerate(root.children):
+                if child is not None:
+                    queue.append(child)
+                    g.edge('%s:f%d' % (id(root), i*2), '%s:f%d' % (id(child), self.depth))
+
+
+        
     def render(self):
         g = Digraph('g', filename='btree.gv', node_attr={'shape': 'record', 'height': '.1'})
-        g.node('node0', nohtml(self._render_node_str(self.root)))
+        self._render_graph(g)
         g.view()
     
     def delete(self, value):
@@ -115,7 +137,7 @@ class BPlusTree():
 
 
 if __name__ == '__main__':
-    data = np.random.choice(100, size=4, replace=False)
+    data = np.random.choice(200, size=150, replace=False)
     tree = BPlusTree()
     print('data:', data)
     for value in data:
