@@ -1,36 +1,38 @@
+"""
+This is a group project, to be worked on and completed in collaboration with
+the group to which you were assigned in class.
 
-# This is a group project, to be worked on and completed in collaboration with the group to which you
-# were assigned in class.
-# One final report is due per group.
-# A number of groups, selected randomly, will be asked to demonstrate the correctness of your program
-# for any input data.
-# Your task is to develop and test a program that generates a B+ tree of order 4 for a sequence of unique
-# index values. In addition, it must support insert and delete operations.
-# 1) Input is:
-# a. a sequence of numeric key values (three digits at most) for initial generation of B+ tree,
-# and
-# b. a sequence of insert and delete commands.
-# 2) For initial sequence of key values, your program should generate and print out the
-# generated index tree. In addition, for each insert and delete command it should also
-# generate and print out the resulting index tree.
-# 3) Test data will be made available on April 5. Your report should show that your program
-# operates correctly for this test data.
-# 4) Your final technical report should include:
-# a. a description of your overall approach and the logic of your program,
-# b. pseudo code for your program,
-# c. output as explained in (2), and
-# d. a hard copy of your program.
-# 5) Please note that the deadline is firm and will not change under any circumstances.
+One final report is due per group.
 
-import numpy as np
-import graphviz
+A number of groups, selected randomly, will be asked to demonstrate the
+correctness of your program for any input data.
+
+Your task is to develop and test a program that generates a B+ tree of order 4
+for a sequence of unique index values. In addition, it must support insert and
+delete operations.
+1) Input is:
+    a. a sequence of numeric key values (three digits at most) for initial
+    generation of B+ tree, and
+    b. a sequence of insert and delete commands.
+2) For initial sequence of key values, your program should generate and print
+out the generated index tree. In addition, for each insert and delete command
+it should also generate and print out the resulting index tree.
+3) Test data will be made available on April 5. Your report should show that
+your program operates correctly for this test data.
+4) Your final technical report should include:
+    a. a description of your overall approach and the logic of your program,
+    b. pseudo code for your program,
+    c. output as explained in (2), and
+    d. a hard copy of your program.
+5) Please note that the deadline is firm and will not change under any
+circumstances.
+"""
+
 from graphviz import Digraph, nohtml
 
 from node.node import Node
 
-np.random.seed(42)
-
-class BPlusTree():
+class BPlusTree(object):
     DEFAULT_DEPTH = 4
 
     def __init__(self, depth=DEFAULT_DEPTH):
@@ -39,18 +41,22 @@ class BPlusTree():
 
     @property
     def depth(self):
+        """An integer denoting the number of levels in of the tree"""
         return self._depth
 
     @depth.setter
     def depth(self, value):
+        """Set the number of levels in the tree"""
         self._depth = value
 
     @property
     def root(self):
+        """The root node of the tree"""
         return self._root
 
     @root.setter
     def root(self, value):
+        """Set the root node of the tree"""
         self._root = value
     
     def insert(self, value, root=None):
@@ -132,25 +138,55 @@ class BPlusTree():
         root = self.root if root is None else root
 
         # Stopping Conditions
-        if val in root.values:
-            # If val is in this node
+        if val in root.values and not root.is_internal:
+            # Delete and flag for removal up the tree
+            print("DELETING")
+            root.values.remove(val)
             return True
         if root.num_children == 0:
-            # If val is not in node, and there are no children
+            print("NO CHILDREN")
             return False
 
         # Recursion
-        for child in root.children:
-            if child is not None:
-                if self.find(val, child):
-                    # If found instantly terminate
-                    # Else keep searching
-                    return True
-        # If not found in any children, it doesn't exist
-        return False
+        if val <= root.values[0]:
+            # If val smaller or equal to first value in the root
+            # Go to first child
+            print("LESS THAN OR EQUAL TO FIRST", val, root.values[0])
+            if self.delete(val, root.children[0]):
+                # if val == root.values[0]:
+                # If value was equal to the values in the root, you must
+                # put a new value in its place
+                newval = root.children[0].values[
+                    len(root.children[0].values) - 1
+                ]
+                root.values[0] = newval
+                return True
+
+        if val > root.values[-1]:
+            # If val greater than the last value in the root
+            # Go to last child
+            print("GREATER THAN LAST", val, root.values[-1])
+            self.delete(val, root.children[len(root.values)])
+
+        for index, value in enumerate(root.values):
+            if not index == len(root.values) - 1 and val > value and val <= root.values[index + 1]:
+                # If in between two values in the root, go to child in between
+                # Go to child at root.children[index + 1]
+                print("BETWEEN", value, "<", val, "<=", root.values[index + 1])
+                equal = val == root.values[index + 1]
+                if self.delete(val, root.children[index + 1]):
+                    if equal:
+                        # If value was equal to the values in the root, you
+                        # must put a new value in its place
+                        newval = root.children[index + 1].values[
+                            len(root.children[index + 1].values) - 1
+                        ]
+                        root.values[index + 1] = newval
 
     def find(self, val, root=None):
         """Determines if value exists in tree"""
+        # Technically this function works, but it doesn't take advantage of the
+        # Optimizations of the B+ Tree. Will fix later.
         root = self.root if root is None else root
 
         # Stopping Conditions
