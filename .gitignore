@@ -1,5 +1,14 @@
+# OS and Editors
+.DS_Store
+.vscode/
+
+# Output
+*.gv
+*.pdf
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
+.pytest_cache/
 *.py[cod]
 *$py.class
 

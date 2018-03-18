@@ -24,8 +24,9 @@
 
 import numpy as np
 import graphviz
-from node import Node
 from graphviz import Digraph, nohtml
+
+from node.node import Node
 
 np.random.seed(42)
 
@@ -94,7 +95,6 @@ class BPlusTree():
                 else:
                     return new_node, split_value
 
-
     def _render_node_str(self, node):
         values = [' ']*self.depth
         f_idx = 0
@@ -122,26 +122,54 @@ class BPlusTree():
                     queue.append(child)
                     g.edge('%s:f%d' % (id(root), i*2), '%s:f%d' % (id(child), self.depth))
 
-
-        
     def render(self):
         g = Digraph('g', filename='btree.gv', node_attr={'shape': 'record', 'height': '.1'})
         self._render_graph(g)
         g.view()
-    
-    def delete(self, value):
-        pass
 
-    def find(self, value):
-        pass
+    def delete(self, val, root=None):
+        """Deletes specified value"""
+        root = self.root if root is None else root
 
+        # Stopping Conditions
+        if val in root.values:
+            # If val is in this node
+            return True
+        if root.num_children == 0:
+            # If val is not in node, and there are no children
+            return False
 
-if __name__ == '__main__':
-    data = np.random.choice(200, size=150, replace=False)
-    tree = BPlusTree()
-    print('data:', data)
-    for value in data:
-        tree.insert(value)
-    tree.render()
-    
+        # Recursion
+        for child in root.children:
+            if child is not None:
+                if self.find(val, child):
+                    # If found instantly terminate
+                    # Else keep searching
+                    return True
+        # If not found in any children, it doesn't exist
+        return False
 
+    def find(self, val, root=None):
+        """Determines if value exists in tree"""
+        root = self.root if root is None else root
+
+        # Stopping Conditions
+        if val in root.values:
+            # If val is in this node
+            return True
+        if root.num_children == 0:
+            # If val is not in node, and there are no children
+            return False
+
+        # Recursion
+        for child in root.children:
+            if child is not None:
+                if self.find(val, child):
+                    # If found instantly terminate
+                    # Else keep searching
+                    return True
+        # If not found in any children, it doesn't exist
+        return False
+
+    def __str__(self):
+        return "depth={}, root={}".format(self.depth, self.root)
