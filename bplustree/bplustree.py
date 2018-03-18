@@ -141,7 +141,12 @@ class BPlusTree(object):
         if val in root.values and not root.is_internal:
             # Delete and flag for removal up the tree
             print("DELETING")
-            root.values.remove(val)
+            if len(root.values) < 3:
+                # underflow
+                root.values.remove(val)
+                pass
+            else:
+                root.values.remove(val)
             return True
         if root.num_children == 0:
             print("NO CHILDREN")
@@ -160,7 +165,6 @@ class BPlusTree(object):
                     len(root.children[0].values) - 1
                 ]
                 root.values[0] = newval
-                return True
 
         if val > root.values[-1]:
             # If val greater than the last value in the root
@@ -187,6 +191,8 @@ class BPlusTree(object):
         """Determines if value exists in tree"""
         # Technically this function works, but it doesn't take advantage of the
         # Optimizations of the B+ Tree. Will fix later.
+        # TODO FIX, after deletion this function can be wrong, only check
+        # external/leaf nodes in future
         root = self.root if root is None else root
 
         # Stopping Conditions

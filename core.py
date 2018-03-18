@@ -26,7 +26,6 @@ tree.render()
 
 # BROKEN
 tree.delete(7)
-# NOT GOING UP THROUGH EVERY NODE
 # tree.delete(34)
 # tree.delete(24)
 # NOT CHECKING FOR EMPTY NODE
