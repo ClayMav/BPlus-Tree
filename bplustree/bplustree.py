@@ -141,13 +141,18 @@ class BPlusTree(object):
         if val in root.values and not root.is_internal:
             # Delete and flag for removal up the tree
             print("DELETING")
+            location = root.values.index(val)
             if len(root.values) < 3:
                 # underflow
                 root.values.remove(val)
-                pass
+                print(root.values[location - 1])
+            elif len(root.values) < 2:
+                root.values.remove(val)
+                return True
             else:
                 root.values.remove(val)
-            return True
+                print(root.values[location - 1])
+            return root.values[location - 1]
         if root.num_children == 0:
             print("NO CHILDREN")
             return False
@@ -157,42 +162,54 @@ class BPlusTree(object):
             # If val smaller or equal to first value in the root
             # Go to first child
             print("LESS THAN OR EQUAL TO FIRST", val, root.values[0])
-            if self.delete(val, root.children[0]):
+            deleted = self.delete(val, root.children[0])
+            if deleted:
                 # if val == root.values[0]:
                 # If value was equal to the values in the root, you must
                 # put a new value in its place
-                newval = root.children[0].values[
-                    len(root.children[0].values) - 1
-                ]
+                if isinstance(deleted, bool):
+                    newval = root.children[0].values[
+                        len(root.children[0].values) - 1
+                    ]
+                else:
+                    newval = deleted
                 root.values[0] = newval
+                return deleted
 
         if val > root.values[-1]:
             # If val greater than the last value in the root
             # Go to last child
             print("GREATER THAN LAST", val, root.values[-1])
-            self.delete(val, root.children[len(root.values)])
+            deleted = self.delete(val, root.children[len(root.values)])
+            if deleted:
+                return deleted
 
         for index, value in enumerate(root.values):
-            if not index == len(root.values) - 1 and val > value and val <= root.values[index + 1]:
+            if not index == len(root.values) - 1 and val > value and \
+                    val <= root.values[index + 1]:
                 # If in between two values in the root, go to child in between
                 # Go to child at root.children[index + 1]
                 print("BETWEEN", value, "<", val, "<=", root.values[index + 1])
                 equal = val == root.values[index + 1]
-                if self.delete(val, root.children[index + 1]):
+                deleted = self.delete(val, root.children[index + 1])
+                if deleted:
                     if equal:
                         # If value was equal to the values in the root, you
                         # must put a new value in its place
-                        newval = root.children[index + 1].values[
-                            len(root.children[index + 1].values) - 1
-                        ]
+                        if isinstance(deleted, bool):
+                            newval = root.children[index + 1].values[
+                                len(root.children[index + 1].values) - 1
+                            ]
+                        else:
+                            newval = deleted
                         root.values[index + 1] = newval
+                        return deleted
 
     def find(self, val, root=None):
         """Determines if value exists in tree"""
         # Technically this function works, but it doesn't take advantage of the
         # Optimizations of the B+ Tree. Will fix later.
-        # TODO FIX, after deletion this function can be wrong, only check
-        # external/leaf nodes in future
+        # TODO FIX
         root = self.root if root is None else root
 
         # Stopping Conditions
@@ -204,14 +221,25 @@ class BPlusTree(object):
             return False
 
         # Recursion
-        for child in root.children:
-            if child is not None:
-                if self.find(val, child):
-                    # If found instantly terminate
-                    # Else keep searching
-                    return True
-        # If not found in any children, it doesn't exist
-        return False
+        if val <= root.values[0]:
+            # If val smaller or equal to first value in the root
+            # Go to first child
+            print("LESS THAN OR EQUAL TO FIRST", val, root.values[0])
+            return self.find(val, root.children[0])
+
+        if val > root.values[-1]:
+            # If val greater than the last value in the root
+            # Go to last child
+            print("GREATER THAN LAST", val, root.values[-1])
+            return self.find(val, root.children[len(root.values)])
+
+        for index, value in enumerate(root.values):
+            if not index == len(root.values) - 1 and val > value and \
+                    val <= root.values[index + 1]:
+                # If in between two values in the root, go to child in between
+                # Go to child at root.children[index + 1]
+                print("BETWEEN", value, "<", val, "<=", root.values[index + 1])
+                return self.find(val, root.children[index + 1])
 
     def __str__(self):
         return "depth={}, root={}".format(self.depth, self.root)
