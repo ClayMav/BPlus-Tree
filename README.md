@@ -3,7 +3,7 @@
 ### Clone this repository
 ```
 
-git clone https://github.com/ClayMav/BalancedPlus-Tree.git
+git clone https://github.com/ClayMav/BPlus-Tree.git
 
 ```
 ### Additional installation instructions
