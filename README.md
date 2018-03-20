@@ -1,4 +1,4 @@
-# BalancedPlus-Tree
+# B+ Tree
 ## Installation
 ### Clone this repository
 ```
@@ -29,7 +29,6 @@ make test
 The above command runs the unit tests located in the `tests/` directory.
 
 ## Troubleshooting
-Browse issues: https://github.com/ClayMav/BalancedPlus-Tree/issues
-## Changelog
+Browse issues: https://github.com/ClayMav/BPlus-Tree/issues
 ## Licence
 Licence: MIT License
