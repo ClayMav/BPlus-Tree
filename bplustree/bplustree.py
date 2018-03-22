@@ -33,21 +33,21 @@ from graphviz import Digraph, nohtml
 from node.node import Node
 
 class BPlusTree(object):
-    DEFAULT_DEPTH = 4
+    DEFAULT_ORDER = 4
 
-    def __init__(self, depth=DEFAULT_DEPTH):
-        self.depth = depth
-        self.root = Node(depth=depth)
+    def __init__(self, order=DEFAULT_ORDER):
+        self.order = order
+        self.root = Node(order=order)
 
     @property
-    def depth(self):
-        """An integer denoting the number of levels in of the tree"""
-        return self._depth
+    def order(self):
+        """An integer denoting the order of the tree"""
+        return self._order
 
-    @depth.setter
-    def depth(self, value):
-        """Set the number of levels in the tree"""
-        self._depth = value
+    @order.setter
+    def order(self, value):
+        """Set the order of the tree"""
+        self._order = value
 
     @property
     def root(self):
@@ -58,12 +58,12 @@ class BPlusTree(object):
     def root(self, value):
         """Set the root node of the tree"""
         self._root = value
-    
-    def insert(self, value, root=None):
+
+    def _insert(self, value, root=None):
         root = self.root if root is None else root
 
         if not root.is_leaf_node:
-            split = self.insert(value, root.find_child(value))
+            split = self._insert(value, root.find_child(value))
             if split is not None:
                 new_node, split_value = split
                 if not root.is_split_imminent:
@@ -71,15 +71,16 @@ class BPlusTree(object):
                     root.add_child(new_node)
                 else:
                     second_new_node, second_split_value = root.insert(split_value)
-                    try:
+                    
+                    if root.find_child(new_node.max) is None:
                         root.add_child(new_node)
-                    except:
+                    else:
                         second_new_node.add_child(new_node)
                     
                     parent_node = root.parent
                     
                     if parent_node is None:
-                        parent_node = Node(values=[second_split_value], depth=self.depth, is_internal=True)
+                        parent_node = Node(values=[second_split_value], order=self.order, is_internal=True)
                         parent_node.add_child(root)
                         parent_node.add_child(second_new_node)
                         self.root = parent_node
@@ -94,15 +95,34 @@ class BPlusTree(object):
                 parent_node = root.parent
 
                 if parent_node is None:
-                    parent_node = Node(values=[split_value], depth=self.depth, is_internal=True)
+                    parent_node = Node(values=[split_value], order=self.order, is_internal=True)
                     parent_node.add_child(root)
                     parent_node.add_child(new_node)
                     self.root = parent_node
                 else:
                     return new_node, split_value
 
+    def insert(self, value):
+        self._insert(value)
+
+        queue = [self.root]
+        leaves = []
+
+        while queue:
+            root = queue.pop(0)
+
+            if root.is_leaf_node:
+                leaves.append(root)
+                if len(leaves) > 1:
+                    leaves[-2].next = leaves[-1]
+                    leaves[-1].prev = leaves[-2]
+
+            for i, child in enumerate(root.children):
+                if child is not None:
+                    queue.append(child)
+
     def _render_node_str(self, node):
-        values = [' ']*self.depth
+        values = [' ']*(self.order-1)
         f_idx = 0
         buffer = []
 
@@ -123,10 +143,13 @@ class BPlusTree(object):
             root = queue.pop(0)
             g.node('%s' % (id(root),), nohtml(self._render_node_str(root)))
 
+            if root.next is not None:
+                g.edge('%s' % (id(root),), '%s' % (id(root.next),), constraint='false')
+            
             for i, child in enumerate(root.children):
                 if child is not None:
                     queue.append(child)
-                    g.edge('%s:f%d' % (id(root), i*2), '%s:f%d' % (id(child), self.depth))
+                    g.edge('%s:f%d' % (id(root), i*2), '%s:f%d' % (id(child), self.order))
 
     def render(self):
         g = Digraph('g', filename='btree.gv', node_attr={'shape': 'record', 'height': '.1'})
@@ -242,4 +265,4 @@ class BPlusTree(object):
                 return self.find(val, root.children[index + 1])
 
     def __str__(self):
-        return "depth={}, root={}".format(self.depth, self.root)
+        return "order={}, root={}".format(self.order, self.root)

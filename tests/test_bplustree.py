@@ -6,19 +6,19 @@ tree = BPlusTree()
 
 def test_bplustree_insert():
     tree.insert(test_data[0])
-    assert str(tree) == "depth=4, root={is_internal: False, depth: 4, values: [42]}"
+    assert str(tree) == "order=4, root={is_internal: False, order: 4, values: [42]}"
 
     tree.insert(test_data[1])
-    assert str(tree) == "depth=4, root={is_internal: False, depth: 4, values: [12, 42]}"
+    assert str(tree) == "order=4, root={is_internal: False, order: 4, values: [12, 42]}"
 
     tree.insert(test_data[2])
-    assert str(tree) == "depth=4, root={is_internal: False, depth: 4, values: [12, 17, 42]}"
+    assert str(tree) == "order=4, root={is_internal: False, order: 4, values: [12, 17, 42]}"
 
     tree.insert(test_data[3])
-    assert str(tree) == "depth=4, root={is_internal: False, depth: 4, values: [3, 12, 17, 42]}"
+    assert str(tree) == "order=4, root={is_internal: False, order: 4, values: [3, 12, 17, 42]}"
 
     tree.insert(test_data[4])
-    assert str(tree) == "depth=4, root={is_internal: True, depth: 4, values: [13]}"
+    assert str(tree) == "order=4, root={is_internal: True, order: 4, values: [13]}"
 
 
 def test_bplustree_find():

@@ -2,13 +2,15 @@ import math
 from copy import deepcopy
 
 class Node():
-    DEFAULT_DEPTH = 4
+    DEFAULT_ORDER = 4
 
-    def __init__(self, values=None, children=None, is_internal=False, parent=None, depth=DEFAULT_DEPTH):
+    def __init__(self, values=None, children=None, is_internal=False, parent=None, order=DEFAULT_ORDER):
         self._values = []
-        self._children = [None]*(depth+1)
-        self.depth = depth
+        self._children = [None]*order
+        self.order = order
         self.parent = parent
+        self.prev = None
+        self.next = None
         self._is_internal = is_internal
         self._num_children = 0
 
@@ -16,6 +18,22 @@ class Node():
             self.values = values
         if children is not None:
             self.children = children
+
+    @property
+    def next(self):
+        return self._next
+
+    @next.setter
+    def next(self, value):
+        self._next = value
+
+    @property
+    def prev(self):
+        return self._prev
+
+    @prev.setter
+    def prev(self, value):
+        self._prev = value
 
     @property
     def parent(self):
@@ -34,20 +52,20 @@ class Node():
         self._is_internal = value
     
     @property
-    def depth(self):
-        return self._depth
+    def order(self):
+        return self._order
 
-    @depth.setter
-    def depth(self, value):
-        self._depth = value
+    @order.setter
+    def order(self, value):
+        self._order = value
     
     @property
     def children(self):
-        return self._children + (self._depth+1-len(self._children))*[None]
+        return self._children + (self._order-len(self._children))*[None]
 
     @children.setter
     def children(self, value):
-        assert len(value) <= (self._depth + 1), 'Children exceed alotted amount'
+        assert len(value) <= self._order, 'Children exceed alotted amount'
         self._children = deepcopy(value)
         self._num_children = sum((child is not None for child in self._children))
 
@@ -77,14 +95,14 @@ class Node():
     
     @values.setter
     def values(self, value):
-        if len(value) <= self.depth:
+        if len(value) < self.order:
             self._values = deepcopy(value)
         else:
-            raise Exception('The number of values passed in should not exceed the depth.')
+            raise Exception('The number of values passed in should not exceed the tree order.')
 
     @property
     def is_split_imminent(self):
-        return (len(self._values) + 1) > self.depth 
+        return (len(self._values) + 1) == self.order 
 
 
     def _find_insert_pos(self, value):
@@ -109,8 +127,8 @@ class Node():
         insert_pos = self._find_insert_pos(value)
         all_values = deepcopy(self.values)
         all_values.insert(insert_pos, value)
-        keep_up_to = (math.floor if self.is_internal else math.ceil)((self.depth+1)/2) 
-        node = Node(values=all_values[keep_up_to:], is_internal=self.is_internal, depth=self.depth)
+        keep_up_to = (math.floor if self.is_internal else math.ceil)((self.order+1)/2) 
+        node = Node(values=all_values[keep_up_to:], is_internal=self.is_internal, order=self.order)
         self.values = all_values[:keep_up_to-(1 if self.is_internal else 0)]
 
         for i, child in enumerate(self.children):
@@ -126,9 +144,9 @@ class Node():
     def insert(self, value):
         split = None
         
-        assert len(self._values) <= self.depth, 'Node has more than the alloted number of values.'
+        assert len(self._values) < self.order, 'Node has more than the alloted number of values.'
 
-        if len(self._values) < self.depth:
+        if len(self._values) < self.order - 1:
             pos = self._find_insert_pos(value)
             self._values.insert(pos, value)
             self._children.insert(pos+1, None)
@@ -148,6 +166,8 @@ class Node():
         
         self.is_internal = True
         self._num_children += 1
+        self.next = None
+        self.prev = None
         node.parent = self
 
     def remove_child(self, node):
@@ -159,12 +179,12 @@ class Node():
         node.parent = None
 
     def find_child(self, value):
-        return self._children[self._find_insert_pos(value)]
+        return self.children[self._find_insert_pos(value)]
 
     def remove(self, value):
         success = False
 
-        if len(self._values) >= math.ceil(self.depth/2): 
+        if len(self._values) >= math.ceil(self.order/2): 
             self._values.remove(value)
             success = True
         
@@ -172,7 +192,7 @@ class Node():
     
 
     def __str__(self):
-        return '{is_internal: %s, depth: %d, values: %s}' % (self.is_internal, self.depth, self.values,)
+        return '{is_internal: %s, order: %d, values: %s}' % (self.is_internal, self.order, self.values,)
 
 
 if __name__ == '__main__':
