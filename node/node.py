@@ -66,7 +66,7 @@ class Node():
     @children.setter
     def children(self, value):
         assert len(value) <= self._order, 'Children exceed alotted amount'
-        self._children = deepcopy(value)
+        self._children = value
         self._num_children = sum((child is not None for child in self._children))
 
     @property

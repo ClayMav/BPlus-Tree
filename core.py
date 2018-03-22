@@ -1,13 +1,16 @@
-# import numpy as np
+import numpy as np
 from time import sleep
 
 from bplustree.bplustree import BPlusTree
 
-# data = np.random.choice(100, size=10, replace=False)
-data = [8, 5, 1, 7, 15, 24, 34, 13, 10, 11, 17, 19, 16, 2, 3, 12, 9]
+np.random.seed(42)
+data = np.random.choice(200, size=200, replace=False)
+
+# data = [8, 5, 1, 7, 15, 24, 34, 13, 10, 11, 17, 19, 16, 2, 3, 12, 9]
 tree = BPlusTree()
 print('data:', data)
 for value in data:
+    print(value)
     tree.insert(value)
 # PRERENDER
 tree.render()
