@@ -23,15 +23,16 @@ tree.render()
 # tree.delete(10)
 # tree.delete(8)
 # tree.delete(11)
+# tree.delete(7)
 
 # BROKEN
-tree.delete(7)
 # tree.delete(34)
 # tree.delete(24)
 # NOT CHECKING FOR EMPTY NODE
 # NOT SHUFFLING OVER VALUES ON UNDERFLOW
 
 # TESTING
+tree.delete(5)
 
 sleep(3)
 tree.render()
