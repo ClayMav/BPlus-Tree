@@ -4,16 +4,22 @@ from time import sleep
 from bplustree.bplustree import BPlusTree
 
 np.random.seed(42)
-data = np.random.choice(200, size=200, replace=False)
+# data = np.random.choice(200, size=200, replace=False)
 
-# data = [8, 5, 1, 7, 15, 24, 34, 13, 10, 11, 17, 19, 16, 2, 3, 12, 9]
+data = [1, 5, 6, 7, 8, 9, 12]
 tree = BPlusTree()
 print('data:', data)
 for value in data:
-    print(value)
     tree.insert(value)
 # PRERENDER
 tree.render()
+
+tree.delete(12)
+tree.delete(9)
+tree.delete(8)
+tree.delete(7)
+tree.delete(6)
+tree.delete(1)
 
 # WORKING
 # Equal and purely to the left
@@ -35,7 +41,7 @@ tree.render()
 # NOT SHUFFLING OVER VALUES ON UNDERFLOW
 
 # TESTING
-tree.delete(5)
+#tree.delete(5)
 
 sleep(3)
 tree.render()

@@ -28,12 +28,13 @@ your program operates correctly for this test data.
 circumstances.
 """
 
+import math
 from graphviz import Digraph, nohtml
 
 from node.node import Node
 
 class BPlusTree(object):
-    DEFAULT_ORDER = 4
+    DEFAULT_ORDER = 3
 
     def __init__(self, order=DEFAULT_ORDER):
         self.order = order
@@ -102,9 +103,7 @@ class BPlusTree(object):
                 else:
                     return new_node, split_value
 
-    def insert(self, value):
-        self._insert(value)
-
+    def _connect_leaves(self):
         queue = [self.root]
         leaves = []
 
@@ -120,6 +119,10 @@ class BPlusTree(object):
             for i, child in enumerate(root.children):
                 if child is not None:
                     queue.append(child)
+
+    def insert(self, value):
+        self._insert(value) 
+        self._connect_leaves()
 
     def _render_node_str(self, node):
         values = [' ']*(self.order-1)
@@ -156,77 +159,35 @@ class BPlusTree(object):
         self._render_graph(g)
         g.view()
 
-    def delete(self, val, root=None):
+    def _delete(self, val, root=None):
         """Deletes specified value"""
         root = self.root if root is None else root
 
-        # Stopping Conditions
-        if val in root.values and not root.is_internal:
-            # Delete and flag for removal up the tree
-            print("DELETING")
-            location = root.values.index(val)
-            if len(root.values) < 3:
-                # underflow
-                root.values.remove(val)
-                print(root.values[location - 1])
-            elif len(root.values) < 2:
-                root.values.remove(val)
-                return True
-            else:
-                root.values.remove(val)
-                print(root.values[location - 1])
-            return root.values[location - 1]
-        if root.num_children == 0:
-            print("NO CHILDREN")
-            return False
+        if not root.is_leaf_node:
+            merged = self._delete(val, root.find_child(val))
 
-        # Recursion
-        if val <= root.values[0]:
-            # If val smaller or equal to first value in the root
-            # Go to first child
-            print("LESS THAN OR EQUAL TO FIRST", val, root.values[0])
-            deleted = self.delete(val, root.children[0])
-            if deleted:
-                # if val == root.values[0]:
-                # If value was equal to the values in the root, you must
-                # put a new value in its place
-                if isinstance(deleted, bool):
-                    newval = root.children[0].values[
-                        len(root.children[0].values) - 1
-                    ]
-                else:
-                    newval = deleted
-                root.values[0] = newval
-                return deleted
-
-        if val > root.values[-1]:
-            # If val greater than the last value in the root
-            # Go to last child
-            print("GREATER THAN LAST", val, root.values[-1])
-            deleted = self.delete(val, root.children[len(root.values)])
-            if deleted:
-                return deleted
-
-        for index, value in enumerate(root.values):
-            if not index == len(root.values) - 1 and val > value and \
-                    val <= root.values[index + 1]:
-                # If in between two values in the root, go to child in between
-                # Go to child at root.children[index + 1]
-                print("BETWEEN", value, "<", val, "<=", root.values[index + 1])
-                equal = val == root.values[index + 1]
-                deleted = self.delete(val, root.children[index + 1])
-                if deleted:
-                    if equal:
-                        # If value was equal to the values in the root, you
-                        # must put a new value in its place
-                        if isinstance(deleted, bool):
-                            newval = root.children[index + 1].values[
-                                len(root.children[index + 1].values) - 1
-                            ]
+            if merged:
+                if len(root.values) != root.num_children-1:
+                    if root.parent:
+                        return root.merge(val)
+                    else:
+                        if root.num_children == 1:
+                            root = self.root
+                            self.root = root.children[0]
+                            root.remove_child(self.root)
                         else:
-                            newval = deleted
-                        root.values[index + 1] = newval
-                        return deleted
+                            root.values.pop(-1)
+        else:
+            if val in root.values:
+                success = root.remove(val)
+                if not success:
+                    if root.redistribute():
+                        root.remove(val)
+                    else:
+                        return root.merge(val)
+                        
+    def delete(self, val, root=None):
+        self._delete(val, root)
 
     def find(self, val, root=None):
         """Determines if value exists in tree"""

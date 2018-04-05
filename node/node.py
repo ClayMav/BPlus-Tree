@@ -2,7 +2,7 @@ import math
 from copy import deepcopy
 
 class Node():
-    DEFAULT_ORDER = 4
+    DEFAULT_ORDER = 3
 
     def __init__(self, values=None, children=None, is_internal=False, parent=None, order=DEFAULT_ORDER):
         self._values = []
@@ -104,8 +104,7 @@ class Node():
     def is_split_imminent(self):
         return (len(self._values) + 1) == self.order 
 
-
-    def _find_insert_pos(self, value):
+    def find_insert_pos(self, value):
         idx = 0
 
         if len(self._values):
@@ -124,7 +123,7 @@ class Node():
     
     def _split(self, value):
         node = None
-        insert_pos = self._find_insert_pos(value)
+        insert_pos = self.find_insert_pos(value)
         all_values = deepcopy(self.values)
         all_values.insert(insert_pos, value)
         keep_up_to = (math.floor if self.is_internal else math.ceil)((self.order+1)/2) 
@@ -141,13 +140,93 @@ class Node():
                 
         return node, all_values[keep_up_to-1]
 
+    def redistribute(self):
+        success = True
+
+        if self.prev and self.prev.parent is self.parent and len(self.prev.values) >= math.ceil(self.order/2):
+            idx = self.parent.children.index(self) - 1
+            split_value = self.prev.values.pop(-1)
+            self.insert(split_value)
+            if not (self.prev.min <= self.parent.values[idx] < self.min): 
+                self.parent.values[idx] = self.prev.min
+        elif self.next and self.next.parent is self.parent and len(self.next.values) >= math.ceil(self.order/2):
+            idx = self.parent.children.index(self.next) - 1
+            split_value = self.next.values.pop(0)
+            self.insert(split_value)
+            if not (self.min <= self.parent.values[idx] < self.next.min): 
+                self.parent.values[idx] = self.min
+        else:
+            success = False
+        
+        return success
+
+    def merge(self, value_to_ignore):
+        success = True
+        left = self.prev if self.prev else self.parent.children[self.parent.children.index(self)-1]
+        right = self.next 
+        right_child_idx = self.parent.children.index(self)+1
+
+        if right_child_idx < len(self.parent.children):
+            right = self.parent.children[self.parent.children.index(self)+1]
+
+        if left and left.parent is self.parent and (len(self.values) + len(left.values)) <= self.order:
+            idx = self.parent.children.index(self) - 1
+            for value in self.values:
+                if value != value_to_ignore:
+                    left.insert(value)
+            if self.is_internal:
+                for child in self.children:
+                    if child:
+                        child_idx = left.find_insert_pos(child.max)
+                        found_child = left.children[child_idx]
+        
+                        if found_child:
+                            left.values[child_idx] = found_child.max
+                        
+                        left.add_child(child)
+        
+            upper_bound = math.inf if right is None else right.min
+            lower_bound = left.min
+            parent = self.parent
+            self.parent.remove_child(self)
+
+            if not (lower_bound <= parent.values[idx] < upper_bound): 
+                parent.values[idx] = lower_bound
+        elif right and right.parent is self.parent and (len(self.values) + len(right.values)) <= self.order:
+            idx = self.parent.children.index(right) - 1
+            for value in self.values:
+                if value != value_to_ignore:
+                    right.insert(value)
+            if self.is_internal:
+                for child in self.children:
+                    if child:
+                        child_idx = right.find_insert_pos(child.max)
+                        found_child = right.children[child_idx]
+        
+                        if found_child:
+                            right.values[child_idx] = found_child.max
+                        
+                        right.add_child(child)
+            
+            upper_bound = right.min
+            lower_bound = -math.inf if left is None else left.min
+            parent = self.parent
+            self.parent.remove_child(self)
+
+            if not (lower_bound <= parent.values[idx] < upper_bound): 
+                parent.values[idx] = lower_bound
+        else:
+            success = False
+        
+        return success
+    
     def insert(self, value):
         split = None
         
         assert len(self._values) < self.order, 'Node has more than the alloted number of values.'
 
         if len(self._values) < self.order - 1:
-            pos = self._find_insert_pos(value)
+            pos = self.find_insert_pos(value)
             self._values.insert(pos, value)
             self._children.insert(pos+1, None)
         else:
@@ -156,7 +235,7 @@ class Node():
         return split
 
     def add_child(self, node):
-        idx = self._find_insert_pos(node.max)
+        idx = self.find_insert_pos(node.max)
         assert idx >= len(self._children) or self.children[idx] is None, 'Cannot overwrite child node.'
         
         if idx >= len(self._children):
@@ -172,14 +251,20 @@ class Node():
 
     def remove_child(self, node):
         self._children.remove(node)
+
+        if node.prev:
+            node.prev.next = node.next if node.next else None
+            if node.next:
+                node.next.prev = node.prev
         
         if not self._num_children:
             self.is_internal = False
 
         node.parent = None
+        self._num_children -= 1
 
     def find_child(self, value):
-        return self.children[self._find_insert_pos(value)]
+        return self.children[self.find_insert_pos(value)]
 
     def remove(self, value):
         success = False
