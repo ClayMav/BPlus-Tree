@@ -154,8 +154,8 @@ class BPlusTree(object):
                     queue.append(child)
                     g.edge('%s:f%d' % (id(root), i*2), '%s:f%d' % (id(child), self.order))
 
-    def render(self):
-        g = Digraph('g', filename='btree.gv', node_attr={'shape': 'record', 'height': '.1'})
+    def render(self, filename='btree.gv'):
+        g = Digraph('g', filename=filename, node_attr={'shape': 'record', 'height': '.1'})
         self._render_graph(g)
         g.view()
 
@@ -181,9 +181,7 @@ class BPlusTree(object):
             if val in root.values:
                 success = root.remove(val)
                 if not success:
-                    if root.redistribute():
-                        root.remove(val)
-                    else:
+                    if not root.redistribute(val):
                         return root.merge(val)
                         
     def delete(self, val, root=None):

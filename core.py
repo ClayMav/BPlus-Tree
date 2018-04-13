@@ -6,20 +6,14 @@ from bplustree.bplustree import BPlusTree
 np.random.seed(42)
 # data = np.random.choice(200, size=200, replace=False)
 
-data = [1, 5, 6, 7, 8, 9, 12]
+data = [1, 5, 6, 7, 8, 9, 12, 4]
 tree = BPlusTree()
 print('data:', data)
 for value in data:
     tree.insert(value)
-# PRERENDER
-tree.render()
 
-tree.delete(12)
-tree.delete(9)
-tree.delete(8)
-tree.delete(7)
-tree.delete(6)
-tree.delete(1)
+tree.render()
+tree.delete(5)
 
 # WORKING
 # Equal and purely to the left
@@ -43,5 +37,5 @@ tree.delete(1)
 # TESTING
 #tree.delete(5)
 
-sleep(3)
+sleep(10)
 tree.render()

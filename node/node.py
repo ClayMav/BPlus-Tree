@@ -140,21 +140,23 @@ class Node():
                 
         return node, all_values[keep_up_to-1]
 
-    def redistribute(self):
+    def redistribute(self, value_to_replace):
         success = True
 
-        if self.prev and self.prev.parent is self.parent and len(self.prev.values) >= math.ceil(self.order/2):
-            idx = self.parent.children.index(self) - 1
-            split_value = self.prev.values.pop(-1)
-            self.insert(split_value)
-            if not (self.prev.min <= self.parent.values[idx] < self.min): 
-                self.parent.values[idx] = self.prev.min
-        elif self.next and self.next.parent is self.parent and len(self.next.values) >= math.ceil(self.order/2):
+        if self.next and self.next.parent is self.parent and len(self.next.values) >= math.ceil(self.order/2):
             idx = self.parent.children.index(self.next) - 1
             split_value = self.next.values.pop(0)
             self.insert(split_value)
-            if not (self.min <= self.parent.values[idx] < self.next.min): 
+            self.remove(value_to_replace)
+            if (not (self.min <= self.parent.values[idx] < self.next.min)):
                 self.parent.values[idx] = self.min
+        elif self.prev and self.prev.parent is self.parent and len(self.prev.values) >= math.ceil(self.order/2):
+            idx = self.parent.children.index(self) - 1
+            split_value = self.prev.values.pop(-1)
+            self.insert(split_value)
+            self.remove(value_to_replace)
+            if (not (self.prev.min <= self.parent.values[idx] < self.min)): 
+                self.parent.values[idx] = self.prev.min
         else:
             success = False
         
